@@ -129,6 +129,8 @@ class CV3TB_PROCESS_RADTEST(object):
     #define plot title
     fileStr = self.fileName.split('/')
     fileStr = fileStr[-1]
+    fileStr = fileStr.split('\\')
+    fileStr = fileStr[-1]
     plotTitle = "Summary: " + str(fileStr)
  
     #plot required data
