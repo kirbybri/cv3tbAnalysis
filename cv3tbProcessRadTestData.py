@@ -18,8 +18,8 @@ class CV3TB_PROCESS_RADTEST(object):
     self.cv3tbProcess32Bit = CV3TB_PROCESS_32BITDATA(self.fileName)
     self.cv3tbAnalyzeFile = CV3TB_ANALYZE_SINEWAVE(self.fileName)
     self.runResultsDict = None
-    self.numSampleReq = 2100
-    self.numSampleSkip = 52
+    self.numSampleReq = 4096
+    self.numSampleSkip = 0
     self.reqLengthSysComments = 6
 
     self.recMeasNum = []
@@ -27,6 +27,7 @@ class CV3TB_PROCESS_RADTEST(object):
     self.recItr = []
     self.recAmp = []
     self.recEnob = []
+    self.recTimestamp = []
     self.measResults = {}
 
     #print some info about what the program expects
@@ -77,7 +78,8 @@ class CV3TB_PROCESS_RADTEST(object):
       print("ERROR getMeasData, required field sysComments missing from metadata,",measNum)
       return None
     sysComments = measAttrs["sysComments"]
-    return measData,sysComments
+    #return measData,sysComments
+    return measData,measAttrs
 
   def dumpData(self,measNum=None,measData=None):
     if measNum == None or measData == None:
@@ -117,21 +119,20 @@ class CV3TB_PROCESS_RADTEST(object):
 
     #dict of required results, organized by plot panel
     reqPlotDict = {}
-    reqPlotDict[(0,0)] = {'ch':"MDAC1",'amp':"1.0",'itr':"itr=1of3",'data':"wf","title":"MDAC1,1Vpp"}
-    reqPlotDict[(0,1)] = {'ch':"MDAC2",'amp':"1.0",'itr':"itr=1of3",'data':"wf","title":"MDAC2,1Vpp"}
-    reqPlotDict[(0,2)] = {'ch':"MDAC3",'amp':"1.0",'itr':"itr=1of3",'data':"wf","title":"MDAC3,1Vpp"}
-    reqPlotDict[(0,3)] = {'ch':"MDAC4",'amp':"1.0",'itr':"itr=1of3",'data':"wf","title":"MDAC4,1Vpp"}
-    reqPlotDict[(1,0)] = {'ch':"SAR1",'amp':"1.0",'itr':"itr=1of3",'data':"wf","title":"SAR1,1Vpp"}
-    reqPlotDict[(1,1)] = {'ch':"SAR1",'amp':"1.0",'itr':"itr=1of3",'data':"psd","title":"SAR1,1Vpp PSD"}
-    reqPlotDict[(1,2)] = {'ch':"SAR8",'amp':"1.0",'itr':"itr=1of3",'data':"wf","title":"SAR8,1Vpp"}
-    reqPlotDict[(1,3)] = {'ch':"SAR8",'amp':"1.0",'itr':"itr=1of3",'data':"psd","title":"SAR8,1Vpp PSD"}
+    reqPlotDict[(0,0)] = {'ch':"MDAC1",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"MDAC1,1Vpp"}
+    reqPlotDict[(0,1)] = {'ch':"MDAC2",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"MDAC2,1Vpp"}
+    reqPlotDict[(0,2)] = {'ch':"MDAC3",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"MDAC3,1Vpp"}
+    reqPlotDict[(0,3)] = {'ch':"MDAC4",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"MDAC4,1Vpp"}
+    reqPlotDict[(1,0)] = {'ch':"SAR1",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"SAR1,1Vpp"}
+    reqPlotDict[(1,1)] = {'ch':"SAR1",'amp':"0.37",'itr':"itr=1of3",'data':"psd","title":"SAR1,1Vpp PSD"}
+    reqPlotDict[(1,2)] = {'ch':"SAR8",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"SAR8,1Vpp"}
+    reqPlotDict[(1,3)] = {'ch':"SAR8",'amp':"0.37",'itr':"itr=1of3",'data':"psd","title":"SAR8,1Vpp PSD"}
 
     #define plot title
     fileStr = self.fileName.split('/')
     fileStr = fileStr[-1]
     fileStr = fileStr.split('\\')
     fileStr = fileStr[-1]
-    plotTitle = "Summary: " + str(fileStr)
  
     #plot required data
     fig, axes = plt.subplots(numRows,numCols,figsize=(14, 6))
@@ -139,17 +140,34 @@ class CV3TB_PROCESS_RADTEST(object):
       for col in range(0,numCols,1):
         reqData = reqPlotDict[(row,col)]
         if reqData['data'] == "wf" :
-          vals = self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ][ reqData['data'] ]
+          vals = []
+          if reqData['ch'] in self.measResults :
+            if reqData['amp'] in self.measResults[ reqData['ch'] ] :
+              if reqData['itr'] in self.measResults[ reqData['ch'] ][ reqData['amp'] ] :
+                if reqData['data'] in self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ] :
+                  vals = self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ][ reqData['data'] ]
+          if len(vals) > 200 :
+            vals = vals[0:200]
           axes[row][col].plot(vals,".")
           axes[row][col].set_xlabel('Sample #', horizontalalignment='right', x=1.0)
           axes[row][col].set_ylabel('ADC CODE [ADC]', horizontalalignment='left', x=1.0)
         if reqData['data'] == "psd" :
-          vals_x = self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ][ "psd_x" ]
-          vals_y = self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ][ "psd_y" ]
+          vals_x = []
+          vals_y = []
+          if reqData['ch'] in self.measResults :
+            if reqData['amp'] in self.measResults[ reqData['ch'] ] :
+              if reqData['itr'] in self.measResults[ reqData['ch'] ][ reqData['amp'] ] :
+                if ( "psd_x" in self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ]) and ("psd_y" in self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ]):
+                  vals_x = self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ][ "psd_x" ]
+                  vals_y = self.measResults[ reqData['ch'] ][ reqData['amp'] ][ reqData['itr'] ][ "psd_y" ]
           axes[row][col].plot(vals_x,vals_y,".")
           axes[row][col].set_xlabel('Frequency [MHz]', horizontalalignment='right', x=1.0)
           axes[row][col].set_ylabel('PSD [dB]', horizontalalignment='left', x=1.0)
         axes[row][col].set_title( reqData['title'] )
+        
+    plotTitle = "Summary: " + str(fileStr)
+    if len(self.recTimestamp) > 0 :
+      plotTitle = plotTitle + ", Time " + self.recTimestamp[0]
     fig.suptitle(plotTitle, fontsize=16)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
@@ -164,7 +182,16 @@ class CV3TB_PROCESS_RADTEST(object):
     measNumVal = measNum.split("_")
     measNumVal = int(measNumVal[1])
     measData = measDataObject[0]
-    sysComments = measDataObject[1]
+    #sysComments = measDataObject[1]
+    measAttrs = measDataObject[1]
+    if "timestamp" not in measAttrs:
+      print("ERROR processMeasurement, required field timestamp missing from metadata,",measNum)
+      return None
+    if "sysComments" not in measAttrs:
+      print("ERROR processMeasurement, required field sysComments missing from metadata,",measNum)
+      return None
+    timestamp = measAttrs["timestamp"]
+    sysComments = measAttrs["sysComments"]
 
     #parse the sysComments metadata
     sysCommentData = self.parseSysComments(measNum,sysComments)
@@ -197,6 +224,7 @@ class CV3TB_PROCESS_RADTEST(object):
     self.recItr.append(itr)
     self.recAmp.append(amp)
     self.recEnob.append(enob)
+    self.recTimestamp.append(timestamp)
 
     if chName not in self.measResults:
       self.measResults[chName] = {}
