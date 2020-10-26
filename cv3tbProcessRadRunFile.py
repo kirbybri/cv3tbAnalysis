@@ -7,7 +7,7 @@ import sys
 import pickle
 import os.path
 
-class CV3TB_PROCESS_FILE(object):
+class CV3TB_PROCESS_RADRUNFILE(object):
 
   #__INIT__#
   def __init__(self,fileName=None):
@@ -23,23 +23,20 @@ class CV3TB_PROCESS_FILE(object):
     #loop over measurement group members, process waveform data
     resultsList = []
     for group_key in meas.keys() :
+      if group_key == "DAQ" :
+        continue
+      if group_key != "histogram" :
+        continue
       mysubgroup = meas[group_key] #group object
       for subgroup_key in mysubgroup.keys() :
         mysubsubgroup = mysubgroup[subgroup_key] #group object
-        colutaNum = group_key
+        if ("bin_count" not in mysubsubgroup) or ("bin_number" not in mysubsubgroup):
+          continue 
+        bin_count = mysubsubgroup["bin_count"].value
+        bin_number = mysubsubgroup["bin_number"].value
+        measType = group_key
         channelNum = subgroup_key
-        if 'raw_data' not in mysubsubgroup :
-          print("Channel is missing required dataset: raw_data")
-          continue
-        #skip unneeded channels
-        if ("frame" in channelNum) or ("adc121A" in channelNum) or ("adc121B" in channelNum) or ("adc121C" in channelNum) or ("adc121D" in channelNum) :
-          continue
-        raw_data = mysubsubgroup['raw_data'] #dataset object      
-        samples = np.dot(raw_data, self.weights) #SAR bits are stored in an int because storing in bytearray took too long, this is silly
-        #limit number of samples to save memory/disk space
-        if self.limitNumSamples and len(samples) > self.maxNumSamples :
-          samples = samples[0:self.maxNumSamples]
-        resultsDict = {'coluta' : colutaNum, 'channel' : channelNum, 'wf' : samples.tolist()}
+        resultsDict = {'measType' : measType, 'channel' : channelNum, 'bin_count' : bin_count.tolist(), 'bin_number' : bin_number.tolist()}
         resultsList.append( resultsDict )
     return resultsList
 
@@ -121,7 +118,7 @@ def main():
     print("ERROR, program requires filename as argument")
     return
   fileName = sys.argv[1]
-  cv3tbProcessFile = CV3TB_PROCESS_FILE(fileName)
+  cv3tbProcessFile = CV3TB_PROCESS_RADRUNFILE(fileName)
   cv3tbProcessFile.processFile()
   cv3tbProcessFile.outputFile()
 

@@ -184,10 +184,10 @@ class CV3TB_PROCESS_RADTESTDAC(object):
 
     for chName in measData :
       if testProfile == "B1" :
-        if  (chName != "channel5") and (chName != "channel7") :
+        if (chName != "channel3") and (chName != "channel5") and (chName != "channel7") :
           continue
       if testProfile == "B2" :
-        if  (chName != "channel6") :
+        if  (chName != "channel2") and (chName != "channel4") and (chName != "channel6") :
           continue
       if testProfile == "D" :
         if  (chName != "channel1") and (chName != "channel8") :
