@@ -18,7 +18,7 @@ class CV3TB_PROCESS_RADTEST(object):
     self.cv3tbProcess32Bit = CV3TB_PROCESS_32BITDATA(self.fileName)
     self.cv3tbAnalyzeFile = CV3TB_ANALYZE_SINEWAVE(self.fileName)
     self.runResultsDict = None
-    self.numSampleReq = 4096
+    self.numSampleReq = 2048
     self.numSampleSkip = 0
     self.reqLengthSysComments = 6
 
@@ -119,14 +119,14 @@ class CV3TB_PROCESS_RADTEST(object):
 
     #dict of required results, organized by plot panel
     reqPlotDict = {}
-    reqPlotDict[(0,0)] = {'ch':"MDAC1",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"MDAC1,1Vpp"}
-    reqPlotDict[(0,1)] = {'ch':"MDAC2",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"MDAC2,1Vpp"}
-    reqPlotDict[(0,2)] = {'ch':"MDAC3",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"MDAC3,1Vpp"}
-    reqPlotDict[(0,3)] = {'ch':"MDAC4",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"MDAC4,1Vpp"}
-    reqPlotDict[(1,0)] = {'ch':"SAR1",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"SAR1,1Vpp"}
-    reqPlotDict[(1,1)] = {'ch':"SAR1",'amp':"0.37",'itr':"itr=1of3",'data':"psd","title":"SAR1,1Vpp PSD"}
-    reqPlotDict[(1,2)] = {'ch':"SAR8",'amp':"0.37",'itr':"itr=1of3",'data':"wf","title":"SAR8,1Vpp"}
-    reqPlotDict[(1,3)] = {'ch':"SAR8",'amp':"0.37",'itr':"itr=1of3",'data':"psd","title":"SAR8,1Vpp PSD"}
+    reqPlotDict[(0,0)] = {'ch':"MDAC1",'amp':"0.35",'itr':"itr=1of3",'data':"wf","title":"MDAC1,1Vpp"}
+    reqPlotDict[(0,1)] = {'ch':"MDAC2",'amp':"0.35",'itr':"itr=1of3",'data':"wf","title":"MDAC2,1Vpp"}
+    reqPlotDict[(0,2)] = {'ch':"MDAC3",'amp':"0.35",'itr':"itr=1of3",'data':"wf","title":"MDAC3,1Vpp"}
+    reqPlotDict[(0,3)] = {'ch':"MDAC4",'amp':"0.35",'itr':"itr=1of3",'data':"wf","title":"MDAC4,1Vpp"}
+    reqPlotDict[(1,0)] = {'ch':"SAR1",'amp':"1.2",'itr':"itr=1of3",'data':"wf","title":"SAR1,1Vpp"}
+    reqPlotDict[(1,1)] = {'ch':"SAR1",'amp':"1.2",'itr':"itr=1of3",'data':"psd","title":"SAR1,1Vpp PSD"}
+    reqPlotDict[(1,2)] = {'ch':"SAR8",'amp':"1.2",'itr':"itr=1of3",'data':"wf","title":"SAR8,1Vpp"}
+    reqPlotDict[(1,3)] = {'ch':"SAR8",'amp':"1.2",'itr':"itr=1of3",'data':"psd","title":"SAR8,1Vpp PSD"}
 
     #define plot title
     fileStr = self.fileName.split('/')
@@ -170,7 +170,9 @@ class CV3TB_PROCESS_RADTEST(object):
       plotTitle = plotTitle + ", Time " + self.recTimestamp[0]
     fig.suptitle(plotTitle, fontsize=16)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.show()
+    plt.plot()
+    
+    plt.savefig(str(fileStr) + ".png")
     return
 
   def processMeasurement(self,measNum=None,measInfo=None):
@@ -238,6 +240,10 @@ class CV3TB_PROCESS_RADTEST(object):
     #for sampNum in range(0,20,1):
     #  print(ch32BitData[chName][sampNum][0:4],"\t",ch32BitData[chName][sampNum][4:12],"\t",ch32BitData[chName][sampNum][12:32])
     #cv3tbAnalyzeFile.plotVals(measNum,vals,psd_x,psd)
+    f = open("data/output_cv3tbProcessRadTestData_wfData_"+ str(chName) + "_" + str(measNum)  + ".txt", "w")
+    for samp in chWf:
+      f.write( str(samp) + "\n")
+    f.close()
     return None
 
   #process processed file data dict
