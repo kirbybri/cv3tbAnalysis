@@ -52,7 +52,7 @@ class CV3TB_ANALYZE_WAVEFORM(object):
       val += self.mdacWeights[bitNum]*int(mdacBits[bitNum])
     return val
 
-  def getWaveformValsFrom32BitData(self,colutaWf):
+  def getWaveformValsFrom32BitData(self,colutaWf,isMdac=True):
     vals = []
     for samp in colutaWf :
       header = samp[0:2]
@@ -60,6 +60,8 @@ class CV3TB_ANALYZE_WAVEFORM(object):
       mdacBits = samp[4:12]
       sarBits = samp[12:32]
       sarBitNum = int(sarBits,2)
+      if isMdac == False :
+        mdacBits = "00000000"
       val = self.getColutaSampleValue(sarBits,mdacBits)
       #print("\t",mdacBits,"\t",sarBits)
       #print("\t",val)

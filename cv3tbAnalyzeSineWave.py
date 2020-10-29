@@ -29,7 +29,7 @@ class CV3TB_ANALYZE_SINEWAVE(object):
       val += self.mdacWeights[bitNum]*int(mdacBits[bitNum])
     return val
 
-  def getWaveformValsFrom32BitData(self,colutaWf):
+  def getWaveformValsFrom32BitData(self,colutaWf,isMdac=True):
     vals = []
     for samp in colutaWf :
       header = samp[0:2]
@@ -37,6 +37,8 @@ class CV3TB_ANALYZE_SINEWAVE(object):
       mdacBits = samp[4:12]
       sarBits = samp[12:32]
       sarBitNum = int(sarBits,2)
+      if isMdac == False :
+        mdacBit = "00000000"
       val = self.getColutaSampleValue(sarBits,mdacBits)
       vals.append(val)
     return vals
@@ -50,6 +52,35 @@ class CV3TB_ANALYZE_SINEWAVE(object):
 
   def ENOB(self,fourier):
     return (self.SINAD(fourier)-1.76)/6.02
+
+  def SFDR(self, fourier):
+    return -20*np.log10(np.max(np.delete(fourier,np.where(fourier==1))))
+    
+  def harmonics(self,fs,fa,K=2):
+    fr = fs/fa
+    fn = fs/2
+    try:
+        harmList = [((k*fa+fn)%fs)-fn for k in np.arange(2,int(fr*K))]
+    except:
+        harmList = []
+    return harmList
+
+  def SNR(self,fourier,fs,K=2):
+    try:
+        freq = np.linspace(0,fs/2,len(fourier))
+        fa = freq[np.argmax(fourier)]
+        fr = fs/fa
+    except:
+        print("Error: Division by 0")
+        fr = 0
+
+    noHarmonics = np.array(fourier,copy=True)
+    harmList = self.harmonics(fs,fa)
+    for i,k in enumerate(freq):
+        for h in harmList:
+            if abs(k-h)<1e-6:
+                noHarmonics[i]=0
+    return self.SINAD(noHarmonics)
 
   def getFftWaveform(self,vals):
     fft_wf = np.fft.fft(vals)
@@ -78,7 +109,9 @@ class CV3TB_ANALYZE_SINEWAVE(object):
         psd.append( 20*np.log10(samp) )
     sinad = self.SINAD(fourier_fftWf_y)
     enob = self.ENOB(fourier_fftWf_y)
-    return psd_x,psd,sinad,enob
+    sfdr = self.SFDR(fourier_fftWf_y)
+    snr = self.SNR(fourier_fftWf_y,40)
+    return psd_x,psd,sinad,enob,sfdr,snr
 
   def printEnob(self,chId=None,measNum=None):
     if chId == None or self.runResultsDict == None or measNum == None:
@@ -93,7 +126,7 @@ class CV3TB_ANALYZE_SINEWAVE(object):
       return
     chWf = measData[chId][1:]  #account for first sample is bad
     vals = self.getWaveformValsFrom32BitData(chWf)
-    psd_x,psd,sinad,enob = self.getFftWaveform(vals)
+    psd_x,psd,sinad,enob,sfdr,snr = self.getFftWaveform(vals)
     print(measNum,"\t",enob)
 
   def plotVals(self,measNum,vals,psd_x,psd):

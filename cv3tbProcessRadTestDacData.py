@@ -3,10 +3,10 @@ import sys
 import numpy as np
 from math import *
 import matplotlib.pyplot as plt
+import datetime
 
 from cv3tbProcessFile import CV3TB_PROCESS_FILE
 from cv3tbProcess32BitData import CV3TB_PROCESS_32BITDATA
-from cv3tbAnalyzeSineWave import CV3TB_ANALYZE_SINEWAVE
 from cv3tbAnalyzeWaveform import CV3TB_ANALYZE_WAVEFORM
 
 #BEGIN CLASS
@@ -17,7 +17,6 @@ class CV3TB_PROCESS_RADTESTDAC(object):
     self.fileName = fileName
     self.cv3tbProcessFile = CV3TB_PROCESS_FILE(self.fileName)
     self.cv3tbProcess32Bit = CV3TB_PROCESS_32BITDATA(self.fileName)
-    #self.cv3tbAnalyzeFile = CV3TB_ANALYZE_SINEWAVE(self.fileName)
     self.cv3tbAnalyzeFile = CV3TB_ANALYZE_WAVEFORM(self.fileName)
     self.runResultsDict = None
     self.numSampleReq = 4096
@@ -32,6 +31,8 @@ class CV3TB_PROCESS_RADTESTDAC(object):
     self.recTimestamp = []
     self.measResults = {}
     self.minTimestamp = None
+    self.gotResults = False
+    self.lastTimestamp = None
 
     #print some info about what the program expects
     #print("PROCESSING RAD TEST DATA")
@@ -106,13 +107,21 @@ class CV3TB_PROCESS_RADTESTDAC(object):
 
     #dict of required results, organized by plot panel
     chList = ["channel1","channel2","channel3","channel4","channel5","channel6","channel7","channel8"]
+    chName = {"channel1":"SAR1","channel2":"DRE2","channel3":"DRE3","channel4":"DRE4","channel5":"MDAC1","channel6":"MDAC2","channel7":"MDAC3","channel8":"SAR8"}
     #chList = ["channel6"]
     chListData = {}
     for ch in chList:
       if ch not in self.measResults :
         chListData[ch] = {}
         continue  
-      chListData[ch] = {'ch':ch,'dacList':[dac for dac in self.measResults[ch] ],'meanList':[self.measResults[ch][dac]["mean"] for dac in  self.measResults[ch] ]}  
+      dacList = []
+      meanList = []
+      rmsList = []
+      for meas in self.measResults[ch] :
+        dacList.append( meas["adc_dacA"] )
+        meanList.append( meas["mean"] )
+        rmsList.append( meas["rms"] )
+      chListData[ch] = {'ch':ch,'chName':chName[ch],'dacList':dacList ,'meanList':meanList,'rmsList':rmsList}  
     reqPlotDict = {} 
     
     reqPlotDict[(0,0)] = chListData["channel1"]
@@ -137,17 +146,24 @@ class CV3TB_PROCESS_RADTESTDAC(object):
         if (row,col) not in reqPlotDict : continue
         reqData = reqPlotDict[(row,col)]
         if "dacList" not in reqData : continue 
-        axes[row][col].plot(reqData["dacList"],reqData["meanList"],".")
+        #axes[row][col].plot(reqData["dacList"],reqData["meanList"],".")
+        axes[row][col].errorbar(x=reqData["dacList"],y=reqData["meanList"],yerr=reqData["rmsList"],fmt=".")
         axes[row][col].set_xlabel('DAC A Code [DAC]', horizontalalignment='right', x=1.0)
         axes[row][col].set_ylabel('Ch WF Mean [ADC]', horizontalalignment='center', x=1.0)
-        axes[row][col].set_title( reqData['ch'] )
+        axes[row][col].set_title( reqData['chName'] )
         
     plotTitle = "DAC Scan Summary: " + str(fileStr)
     if self.minTimestamp != None:
       plotTitle = plotTitle + ", " + str(self.minTimestamp)
     fig.suptitle(plotTitle, fontsize=16)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.show()
+    #plt.show()
+    plt.savefig('dacPlot.png',
+      bbox_inches='tight',
+      dpi=150
+      )
+    self.gotResults = True
+    
     return
 
   def processMeasurement(self,measNum=None,measInfo=None):
@@ -171,6 +187,16 @@ class CV3TB_PROCESS_RADTESTDAC(object):
 
     adc_dacA = measAttrs["adc_dacA"]
     timestamp = measAttrs["timestamp"]
+    
+    #compare timestamps
+    #print(timestamp,"\t",self.lastTimestamp)
+    datetime_timestamp = datetime.datetime.strptime(timestamp, '%y_%m_%d_%H_%M_%S.%f')
+    datetime_lastTimestamp = datetime.datetime.strptime(self.lastTimestamp, '%y_%m_%d_%H_%M_%S.%f')
+    difference = datetime_lastTimestamp - datetime_timestamp
+    difference = difference.total_seconds() / 60.
+    #require all timestamps within 30 minutes of last timestamp
+    if difference > 30 :
+      return None
 
     if self.minTimestamp == None:
       self.minTimestamp = timestamp
@@ -181,27 +207,47 @@ class CV3TB_PROCESS_RADTESTDAC(object):
     if len(testProfile) != 3 :
       return None
     testProfile = testProfile[2]
-
-    for chName in measData :
+    
+    for chName in measData   :
       if testProfile == "B1" :
-        if (chName != "channel3") and (chName != "channel5") and (chName != "channel7") :
+        if (chName != "channel3") and  (chName != "channel5") and (chName != "channel7") :
           continue
       if testProfile == "B2" :
-        if  (chName != "channel2") and (chName != "channel4") and (chName != "channel6") :
+        if  (chName != "channel2") and (chName != "channel4")  and (chName != "channel6") :
           continue
-      if testProfile == "D" :
+      if testProfile == "D"  :
         if  (chName != "channel1") and (chName != "channel8") :
           continue
-      
+      isMdac = True
+      if (chName == "channel1") or (chName == "channel2") or (chName == "channel3") or (chName == "channel4"):
+        isMdac = False
       wf = measData[chName]
-      vals = self.cv3tbAnalyzeFile.getWaveformValsFrom32BitData(wf)
+      vals = self.cv3tbAnalyzeFile.getWaveformValsFrom32BitData(colutaWf=wf,isMdac=isMdac)
       if chName not in self.measResults:
-        self.measResults[chName] = {}
-      if adc_dacA not in self.measResults[chName] :
-        self.measResults[chName][adc_dacA] = {}
-      self.measResults[chName][adc_dacA] = {"mean": np.mean(vals)}      
+        self.measResults[chName] = []
+      self.measResults[chName].append( {"adc_dacA":adc_dacA, "mean":np.mean(vals) , "rms":np.std(vals)   }    )
     return None
-    
+
+  def findLastTimestamp(self,measNum=None,measInfo=None):
+    #get measurement data objects
+    measDataObject = self.getMeasData(measNum,measInfo)
+    if measDataObject == None:
+      print("Could not parse measurement data objects,",measNum)
+      return None
+    measNumVal = measNum.split("_")
+    measNumVal = int(measNumVal[1])
+    measData = measDataObject[0]
+    #sysComments = measDataObject[1]
+    measAttrs = measDataObject[1]
+    if "timestamp" not in measAttrs:
+      print("ERROR processMeasurement, required field timestamp missing from metadata,",measNum)
+      return None
+    timestamp = measAttrs["timestamp"]   
+    if self.lastTimestamp == None :
+      self.lastTimestamp = timestamp
+    if timestamp > self.lastTimestamp :
+      self.lastTimestamp = timestamp
+    return None
 
   #process processed file data dict
   def processFileData(self):
@@ -212,6 +258,9 @@ class CV3TB_PROCESS_RADTESTDAC(object):
       print("ERROR, no data recovered from file ,exiting")
       return None
     runData =  self.runResultsDict["results"]
+    #identify last time stamp
+    for cnt, (measNum, measInfo) in enumerate(runData.items()):
+      self.findLastTimestamp(measNum,measInfo)
     #loop through dict, find measurements with sysComments metadata
     for cnt, (measNum, measInfo) in enumerate(runData.items()):
       self.processMeasurement(measNum,measInfo)
@@ -224,13 +273,14 @@ class CV3TB_PROCESS_RADTESTDAC(object):
     if self.cv3tbProcessFile.runResultsDict == None:
       print("ERROR, could not process ",self.fileName)
       return None
+    self.runResultsDict = self.cv3tbProcessFile.runResultsDict
     
     self.cv3tbProcess32Bit.runResultsDict = self.cv3tbProcessFile.runResultsDict
     self.cv3tbProcessFile.runResultsDict = {}
     self.cv3tbProcess32Bit.chsIn32BitMode = ["channel1","channel2","channel3","channel4","channel5","channel6","channel7","channel8"]
     self.cv3tbProcess32Bit.processFile()
     self.runResultsDict = self.cv3tbProcess32Bit.runResultsDict
-
+        
     self.processFileData()
     self.plotMeasResults()
     return None

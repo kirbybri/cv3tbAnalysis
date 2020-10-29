@@ -21,11 +21,8 @@ class CV3TB_ANALYZE_DACSCAN(object):
     #calib constants
     #self.sarWeights = [3584*4,2048*4,1024*4,640*4,384*4,256*4,128*4,224*4,128*4,64*4,32*4,24*4,16*4,10*4,6*4,4*4,2*4,1*4,2,1]
     #self.mdacWeights = [4288*4, 4288*4, 4288*4, 4288*4, 4288*4, 4288*4, 4288*4, 4288*4]
-    #self.mdacWeights = [4288, 4288, 4288, 4288, 4288, 4288, 4288, 4288]
-    #self.mdacWeights = [4277.251,4283.219,4285.961,4290.093,4290.856,4283.504,4277.665,4280.296] #ASIC 10 ch8 Jan24 MDAC scan weights
-    #self.sarWeights = [3584,2048,1024,640,384,256,128,224,128,64,32,24,16,10,6,4,2,1,0.5,0.25]
-    self.mdacWeights = [4348.12, 4345.17, 4345.67, 4346.73, 4349.41, 4346.04, 4345.46, 4344.68]
-    self.sarWeights = [3584, 2048.65, 1025.31, 641.709, 385.31, 257.153, 128.205, 221.966, 127.491, 63.5096, 32.0504, 23.7532, 15.755, 9.8403, 5.87503, 3.89925, 1.9401, 1.00507, 0.516821, 0.30187]
+    self.mdacWeights = [4288, 4288, 4288, 4288, 4288, 4288, 4288, 4288]
+    self.sarWeights = [3584,2048,1024,640,384,256,128,224,128,64,32,24,16,10,6,4,2,1,0.5,0.25]
 
     #self.lowRun = 4200
     #self.highRun = 62000
@@ -640,7 +637,10 @@ class CV3TB_ANALYZE_DACSCAN(object):
       return
     chWf = measData[chId]
 
-    print(chWf)
+    #print(chWf)
+
+    print(measNum)
+    print("\t",measAttrs)
 
     x = []
     y = []
@@ -653,7 +653,8 @@ class CV3TB_ANALYZE_DACSCAN(object):
     for sampNum,samp in enumerate(chWf) :
       mdacBits = samp[4:12]
       sarBits = samp[12:32]
-      sarVal = self.getColutaSampleValue(sarBits,[0,0,0,0,0,0,0,0])
+      #sarVal = self.getColutaSampleValue(sarBits,[0,0,0,0,0,0,0,0])
+      sarVal = self.getColutaSampleValue(sarBits,mdacBits)
       x.append(sampNum)
       y.append(sarVal)
       if mdacBits == prevMdacBits or sampNum == 0:
@@ -671,7 +672,7 @@ class CV3TB_ANALYZE_DACSCAN(object):
     axes.set_xlabel('Sample #', horizontalalignment='right', x=1.0)
     axes.set_ylabel('Sample Value Using SAR Bits Only', horizontalalignment='left', x=1.0)
     axes.set_title("COLUTA Sample Waveform, SAR Bit Values Only, " + str(measNum) )
-    axes.set_ylim(2700,2900)
+    #axes.set_ylim(2700,2900)
     #axes.set_ylim(6050,6150)
     #axes.legend(fontsize=12)
     fig.tight_layout()

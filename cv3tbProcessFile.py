@@ -88,7 +88,7 @@ class CV3TB_PROCESS_FILE(object):
     #loop through measurements, store results in dict
     measResultsDict = {}
     for measNum in self.hdf5File.keys() :
-      print( "Measurement","\t",measNum)
+      #print( "Measurement","\t",measNum)
       meas = self.hdf5File[measNum]
       measData = self.processMeasurement(meas)
       if measData == None :

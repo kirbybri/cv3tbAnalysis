@@ -61,7 +61,7 @@ class CV3TB_PROCESS_32BITDATA(object):
       word0ChId = self.chPairsIn32BitMode[ch][0]
       word1ChId = self.chPairsIn32BitMode[ch][1]
       if word0ChId not in allChWfDict or word1ChId not in allChWfDict:
-        print("ERROR, does not have data required for 32 bit mode")
+        #print("ERROR, does not have data required for 32 bit mode")
         continue
       word0ChData = allChWfDict[word0ChId]
       word1ChData = allChWfDict[word1ChId]
@@ -109,7 +109,7 @@ class CV3TB_PROCESS_32BITDATA(object):
       measAttrs = {}
       if "attrs" in measInfo:
         measAttrs = measInfo["attrs"]
-      print(cnt,"\t",measNum)
+      #print(cnt,"\t",measNum)
       allChData32Bit = self.getMeasCh32Bit(measData)
       measResultsDict[measNum] = {'data':allChData32Bit,'attrs':measAttrs}
     self.runResultsDict["results"] = measResultsDict
