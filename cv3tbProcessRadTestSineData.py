@@ -340,10 +340,10 @@ class CV3TB_PROCESS_RADTESTSINE(object):
     #for sampNum in range(0,20,1):
     #  print(ch32BitData[chName][sampNum][0:4],"\t",ch32BitData[chName][sampNum][4:12],"\t",ch32BitData[chName][sampNum][12:32])
     #cv3tbAnalyzeFile.plotVals(measNum,vals,psd_x,psd)
-    f = open("data/output_cv3tbProcessRadTestData_wfData_"+ str(chName) + "_" + str(measNum)  + ".txt", "w")
-    for samp in chWf:
-      f.write( str(samp) + "\n")
-    f.close()
+    #f = open("data/output_cv3tbProcessRadTestData_wfData_"+ str(chName) + "_" + str(measNum)  + ".txt", "w")
+    #for samp in chWf:
+    #  f.write( str(samp) + "\n")
+    #f.close()
     return None
     
   def findLastTimestamp(self,measNum=None,measInfo=None):
