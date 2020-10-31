@@ -47,13 +47,15 @@ class CV3TB_PROCESS_RADTESTAD121(object):
       #print( "Measurement","\t",measNum)
       meas = self.hdf5File[measNum]
       measAttrs = meas.attrs
-      if "timestamp" not in measAttrs : continue
+      if "timestamp" not in measAttrs : 
+        print("NO timestamp")
+        continue
       timestamp = measAttrs["timestamp"]
       if self.lastTimestamp == None :
         self.lastTimestamp = timestamp
       if timestamp > self.lastTimestamp :
         self.lastTimestamp = timestamp
-    #
+    #return None
         
     #loop through measurements, store results in dict
     weights = [2048,1024,512,256,128,64,32,16,8,4,2,1] #generic binary weights for 16-bit words
@@ -61,18 +63,20 @@ class CV3TB_PROCESS_RADTESTAD121(object):
       #print( "Measurement","\t",measNum)
       meas = self.hdf5File[measNum]
       measAttrs = meas.attrs
-      if "timestamp" not in measAttrs : continue
+      if "timestamp" not in measAttrs : 
+        print("NO timestamp")
+        continue
       timestamp = measAttrs["timestamp"]
             
       #compare timestamps
-      #print(timestamp,"\t",self.lastTimestamp)
       datetime_timestamp = datetime.datetime.strptime(timestamp, '%y_%m_%d_%H_%M_%S.%f')
       datetime_lastTimestamp = datetime.datetime.strptime(self.lastTimestamp, '%y_%m_%d_%H_%M_%S.%f')
       difference = datetime_lastTimestamp - datetime_timestamp
       difference = difference.total_seconds() / 60.
       #require all timestamps within 30 minutes of last timestamp
+      #print(timestamp,"\t",self.lastTimestamp,"\t",datetime_timestamp,"\t",datetime_lastTimestamp,"\t",difference)
       if difference > 30 :
-        return None
+        continue
       
       if "sysComments" not in measAttrs : continue
       if "dos_dacA" not in measAttrs : continue
