@@ -26,7 +26,7 @@ class CV3TB_PROCESS_RADTESTAD121(object):
     self.measResults = {}
     self.minTimestamp = None
     self.gotResults = False
-    #
+    self.plotAfter = True
     
   def processFileData(self):
     if self.fileName == None:
@@ -75,9 +75,17 @@ class CV3TB_PROCESS_RADTESTAD121(object):
       difference = difference.total_seconds() / 60.
       #require all timestamps within 30 minutes of last timestamp
       #print(timestamp,"\t",self.lastTimestamp,"\t",datetime_timestamp,"\t",datetime_lastTimestamp,"\t",difference)
-      if difference > 30 :
+      #require all timestamps within 30 minutes of last timestamp
+      if (difference > 30) and (self.plotAfter == True) :
         continue
-      
+      if (difference <= 30) and (self.plotAfter == False) :
+        continue
+        
+      if self.minTimestamp == None:
+        self.minTimestamp = timestamp
+      elif timestamp < self.minTimestamp :
+        self.minTimestamp = timestamp
+            
       if "sysComments" not in measAttrs : continue
       if "dos_dacA" not in measAttrs : continue
       for measType in meas :
@@ -144,10 +152,10 @@ class CV3TB_PROCESS_RADTESTAD121(object):
         axes[row][col].set_xlabel('DAC A Code [DAC]', horizontalalignment='right', x=1.0)
         axes[row][col].set_ylabel('Ch WF Mean [ADC]', horizontalalignment='center', x=1.0)
         axes[row][col].set_title( reqData['chName'] )
-        
-    plotTitle = "ADC121 Summary: " + str(fileStr)
-    if self.minTimestamp != None:
-      plotTitle = plotTitle + ", " + str(self.minTimestamp)
+
+    plotTitle = "Summary: " + str(fileStr)
+    if self.minTimestamp != None :
+      plotTitle = plotTitle + ", Time " + self.minTimestamp
     fig.suptitle(plotTitle, fontsize=16)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     #plt.show()

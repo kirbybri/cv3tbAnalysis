@@ -70,12 +70,17 @@ def main():
     print("ERROR, cv3tbProcessRadTestData requires filename")
     return
   fileName = sys.argv[1]
+
   print("FILE",fileName)
   cv3tbProcessRadTestSine = CV3TB_PROCESS_RADTESTSINE(fileName)
   cv3tbProcessRadTestDac = CV3TB_PROCESS_RADTESTDAC(fileName)
   cv3tbProcessRadTestAd121 = CV3TB_PROCESS_RADTESTAD121(fileName)
 
   results = {}
+  isAfter = True
+  cv3tbProcessRadTestSine.plotAfter = isAfter
+  cv3tbProcessRadTestDac.plotAfter = isAfter
+  cv3tbProcessRadTestAd121.plotAfter = isAfter
   
   print("PROCESS SINE WAVE TEST")
   cv3tbProcessRadTestSine.processFile()

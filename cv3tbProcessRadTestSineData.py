@@ -33,6 +33,8 @@ class CV3TB_PROCESS_RADTESTSINE(object):
     self.recTimestamp = []
     self.measResults = {}
     self.lastTimestamp = None
+    self.plotAfter = True
+    self.minTimestamp = None
 
     #print some info about what the program expects
     #print("PROCESSING RAD TEST DATA")
@@ -246,8 +248,8 @@ class CV3TB_PROCESS_RADTESTSINE(object):
         axes[row][col].set_title( reqData['title'] )
         
     plotTitle = "Summary: " + str(fileStr)
-    if len(self.recTimestamp) > 0 :
-      plotTitle = plotTitle + ", Time " + self.recTimestamp[0]
+    if self.minTimestamp != None :
+      plotTitle = plotTitle + ", Time " + self.minTimestamp
     fig.suptitle(plotTitle, fontsize=16)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     #plt.show()
@@ -288,9 +290,15 @@ class CV3TB_PROCESS_RADTESTSINE(object):
     difference = datetime_lastTimestamp - datetime_timestamp
     difference = difference.total_seconds() / 60.
     #require all timestamps within 30 minutes of last timestamp
-    if difference > 30 :
+    if (difference > 30) and (self.plotAfter == True) :
       return None
-
+    if (difference <= 30) and (self.plotAfter == False) :
+      return None
+      
+    if self.minTimestamp == None:
+      self.minTimestamp = timestamp
+    elif timestamp < self.minTimestamp :
+      self.minTimestamp = timestamp
 
     #parse the sysComments metadata
     sysCommentData = self.parseSysComments(measNum,sysComments)
